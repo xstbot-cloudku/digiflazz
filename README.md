@@ -1,6 +1,6 @@
-# Digiflazz SDK for Node.js
+# Digiflazz SDK
 
-Unofficial Digiflazz API SDK for Node.js - Simple and easy-to-use wrapper for Digiflazz PPOB API.
+Unofficial Digiflazz API SDK - Simple and easy-to-use wrapper for Digiflazz PPOB API.
 
 [![npm version](https://img.shields.io/npm/v/@xstbot/digiflazz.svg)](https://www.npmjs.com/package/@xstbot/digiflazz)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
@@ -542,13 +542,13 @@ This is an unofficial SDK and is not affiliated with or endorsed by Digiflazz. U
 
 For issues related to this SDK, please open an issue on the repository.
 
-For Digiflazz API issues, please contact Digiflazz support at https://support.xstbot.id/tickets
+For Digiflazz API issues, please contact Digiflazz support at https://t.me/xstbot_npm
 
 ## Links
 
-- [Homepage](https://docs.xstbot.id/digiflazz)
-- [Repository](https://git.xstbot.id/digiflazz-sdk.git)
-- [Bug Reports](https://support.xstbot.id/tickets)
+- [Homepage](https://github.com/xstbot-cloudku/digiflazz)
+- [Repository](https://github.com/xstbot-cloudku/digiflazz.git)
+- [Bug Reports](https://t.me/xstbot_npm)
 
 ---
 
