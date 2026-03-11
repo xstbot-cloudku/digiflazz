@@ -1,0 +1,45 @@
+{
+  "name": "@xstbot/digiflazz",
+  "version": "1.0.0",
+  "description": "Digiflazz API SDK",
+  "main": "index.js",
+  "type": "commonjs",
+
+  "keywords": [
+    "digiflazz",
+    "ppob",
+    "pulsa",
+    "topup",
+    "payment",
+    "api"
+  ],
+
+  "author": "XSTBOT",
+  "license": "MIT",
+
+  "engines": {
+    "node": ">=16"
+  },
+
+  "files": [
+    "index.js",
+    "src",
+    "README.md",
+    "LICENSE"
+  ],
+
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/xstbot-cloudku/digiflazz.git"
+  },
+
+  "homepage": "https://github.com/xstbot-cloudku/digiflazz",
+
+  "bugs": {
+    "url": "https://github.com/xstbot-cloudku"
+  },
+
+  "publishConfig": {
+    "access": "public"
+  }
+}
