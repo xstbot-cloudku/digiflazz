@@ -55,6 +55,10 @@ class Digiflazz {
     return pascabayar.bayarTagihan(this, buyerSkuCode, customerNo, refId, options);
   }
 
+  statusPasca(buyerSkuCode, customerNo, refId, options) {
+    return pascabayar.statusPasca(this, buyerSkuCode, customerNo, refId, options);
+  }
+
 }
 
 module.exports = Digiflazz;
