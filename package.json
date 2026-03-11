@@ -1,6 +1,6 @@
 {
   "name": "@xstbot/digiflazz",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Digiflazz API SDK",
   "main": "index.js",
   "type": "commonjs",
