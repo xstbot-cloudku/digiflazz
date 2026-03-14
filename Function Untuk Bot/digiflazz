@@ -1,0 +1,332 @@
+const Digiflazz = require('@xstbot/digiflazz');
+
+class DigiflazzService {
+    constructor(username, apiKey) {
+        this.digiflazz = new Digiflazz(username, apiKey);
+    }
+
+    /**
+     * Request deposit ke Digiflazz
+     * @param {number} amount - Nominal deposit
+     * @param {string} bank - Nama bank (BCA, BRI, BNI, dll)
+     * @param {string} ownerName - Nama pemilik rekening
+     */
+    async deposit(amount, bank, ownerName) {
+        try {
+            const result = await this.digiflazz.deposit(amount, bank, ownerName);
+            
+            if (!result.data || result.data.rc !== "00") {
+                throw new Error(`Gagal Request Deposit - ${result.data ? result.data.message : 'Unknown Error'} (RC: ${result.data ? result.data.rc : '-'})`);
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    bank: d.bank,
+                    paymentMethod: d.payment_method,
+                    accountNo: d.account_no,
+                    amount: d.amount,
+                    notes: d.notes
+                },
+                message: `Transfer Rp ${Number(d.amount).toLocaleString('id-ID')} ke ${d.bank} - ${d.account_no}`
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cek saldo deposit Digiflazz
+     */
+    async cekSaldo() {
+        try {
+            const result = await this.digiflazz.saldo();
+            
+            if (!result.data) {
+                throw new Error('Gagal mengambil data saldo');
+            }
+
+            const saldo = result.data.deposit;
+            return {
+                success: true,
+                data: {
+                    deposit: saldo,
+                    formatted: `Rp ${Number(saldo).toLocaleString('id-ID')}`
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Topup/transaksi prabayar
+     * @param {string} sku - Kode SKU produk
+     * @param {string} tujuan - Nomor tujuan
+     * @param {string} refId - Reference ID (opsional, auto-generate jika kosong)
+     */
+    async topup(sku, tujuan, refId = null) {
+        try {
+            const finalRefId = refId || `TRX${Date.now()}${Math.floor(Math.random() * 1000)}`;
+            const result = await this.digiflazz.topup(sku, tujuan, finalRefId);
+            
+            if (!result.data || result.data.rc === "40" || result.data.rc === "44") {
+                throw new Error(`Transaksi Gagal - ${result.data ? result.data.message : 'Invalid Payload'} (RC: ${result.data ? result.data.rc : '??'})`);
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    refId: d.ref_id,
+                    sku: d.buyer_sku_code,
+                    customerNo: d.customer_no,
+                    status: d.status,
+                    rc: d.rc,
+                    message: d.message,
+                    price: d.price,
+                    sn: d.sn || '-'
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cek status transaksi prabayar
+     * @param {string} sku - Kode SKU produk
+     * @param {string} nomor - Nomor pelanggan
+     * @param {string} refId - Reference ID transaksi
+     */
+    async statusPrabayar(sku, nomor, refId) {
+        try {
+            const result = await this.digiflazz.status(sku, nomor, refId);
+            
+            if (!result.data || result.data.rc === "40") {
+                throw new Error(`Gagal Cek Status - ${result.data ? result.data.message : 'Cek kembali Ref ID'} (RC: ${result.data ? result.data.rc : '??'})`);
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    refId: d.ref_id,
+                    sku: d.buyer_sku_code,
+                    customerNo: d.customer_no,
+                    status: d.status,
+                    sn: d.sn || '-',
+                    message: d.message
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Ambil daftar harga prabayar
+     */
+    async pricelistPrepaid() {
+        try {
+            const result = await this.digiflazz.pricelistPrepaid();
+            
+            if (result.data && result.data.rc === "83") {
+                throw new Error('API Limit Reached - Tunggu 1-5 menit');
+            }
+
+            const dataProduk = Array.isArray(result.data) ? result.data : null;
+
+            if (!dataProduk) {
+                throw new Error('Struktur data tidak dikenal');
+            }
+
+            return {
+                success: true,
+                data: dataProduk.map(p => ({
+                    productName: p.product_name,
+                    sku: p.buyer_sku_code,
+                    price: p.price,
+                    priceFormatted: `Rp ${Number(p.price).toLocaleString('id-ID')}`,
+                    isActive: p.buyer_product_status && p.seller_product_status,
+                    brand: p.brand,
+                    category: p.category
+                })),
+                total: dataProduk.length
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cek tagihan pascabayar
+     * @param {string} sku - Kode SKU produk
+     * @param {string} nomor - Nomor pelanggan
+     * @param {string} refId - Reference ID (opsional)
+     */
+    async cekTagihan(sku, nomor, refId = null) {
+        try {
+            const finalRefId = refId || `INQ${Date.now()}${Math.floor(Math.random() * 1000)}`;
+            const result = await this.digiflazz.cekTagihan(sku, nomor, finalRefId);
+            
+            if (!result.data || result.data.rc !== "00") {
+                throw new Error(`Gagal Cek Tagihan - ${result.data ? result.data.message : 'Gagal memproses'} (RC: ${result.data ? result.data.rc : '-'})`);
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    customerName: d.customer_name || '-',
+                    customerNo: d.customer_no,
+                    sku: d.buyer_sku_code,
+                    periode: d.periode || '-',
+                    admin: d.admin || 0,
+                    sellingPrice: d.selling_price || 0,
+                    refId: d.ref_id,
+                    formatted: {
+                        admin: `Rp ${Number(d.admin || 0).toLocaleString('id-ID')}`,
+                        total: `Rp ${Number(d.selling_price || 0).toLocaleString('id-ID')}`
+                    }
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Bayar tagihan pascabayar
+     * @param {string} sku - Kode SKU produk
+     * @param {string} nomor - Nomor pelanggan
+     * @param {string} refId - Reference ID dari cekTagihan
+     */
+    async bayarTagihan(sku, nomor, refId) {
+        try {
+            const result = await this.digiflazz.bayarTagihan(sku, nomor, refId);
+            
+            if (!result.data || (result.data.rc !== "00" && result.data.rc !== "03")) {
+                throw new Error(`Gagal Bayar Tagihan - ${result.data ? result.data.message : 'Kesalahan payload'} (RC: ${result.data ? result.data.rc : '-'})`);
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    customerName: d.customer_name,
+                    refId: d.ref_id,
+                    status: d.status,
+                    rc: d.rc,
+                    price: d.price || 0,
+                    sn: d.sn || '-',
+                    message: d.message,
+                    formatted: {
+                        price: `Rp ${Number(d.price || 0).toLocaleString('id-ID')}`
+                    }
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+    /**
+     * Cek status pembayaran pascabayar
+     * @param {string} sku - Kode SKU produk
+     * @param {string} nomor - Nomor pelanggan
+     * @param {string} refId - Reference ID transaksi
+     */
+    async statusPascabayar(sku, nomor, refId) {
+        try {
+            const result = await this.digiflazz.statusPasca(sku, nomor, refId);
+            
+            if (!result.data) {
+                throw new Error('Gagal Cek Status Pascabayar');
+            }
+
+            const d = result.data;
+            return {
+                success: true,
+                data: {
+                    customerName: d.customer_name || '-',
+                    refId: d.ref_id,
+                    status: d.status,
+                    rc: d.rc,
+                    sn: d.sn || '-',
+                    message: d.message
+                }
+            };
+        } catch (error) {
+            return {
+                success: false,
+                error: error.message
+            };
+        }
+    }
+
+/**
+ * Ambil daftar harga pascabayar
+ */
+async pricelistPascabayar() {
+    try {
+        const result = await this.digiflazz.pricelistPasca();
+        
+        if (result.data && result.data.rc === "83") {
+            throw new Error('API Limit Reached - Tunggu beberapa menit');
+        }
+
+        const dataProduk = Array.isArray(result.data) ? result.data : null;
+
+        if (!dataProduk) {
+            throw new Error('Gagal Mengambil Pricelist Pascabayar');
+        }
+
+        return {
+            success: true,
+            data: dataProduk.map(p => ({
+                productName: p.product_name,
+                brand: p.brand,
+                sku: p.buyer_sku_code,
+                admin: p.admin,
+                commission: p.commission,
+                isActive: p.buyer_product_status && p.seller_product_status,
+                formatted: {
+                    admin: `Rp ${Number(p.admin).toLocaleString('id-ID')}`,
+                    commission: `Rp ${Number(p.commission).toLocaleString('id-ID')}`
+                }
+            })),
+            total: dataProduk.length
+        };
+    } catch (error) {
+        return {
+            success: false,
+            error: error.message
+        };
+    }
+  }
+}
+
+module.exports = DigiflazzService;
